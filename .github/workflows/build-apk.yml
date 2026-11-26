@@ -1,3 +1,4 @@
+
 name: Build Back To Me APK
 
 on:
@@ -9,6 +10,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Get source code
         uses: actions/checkout@v4
@@ -18,6 +20,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
 
       - name: Install Android platform
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
@@ -36,3 +43,4 @@ jobs:
           name: BackToMe-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          
