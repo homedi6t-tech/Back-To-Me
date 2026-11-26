@@ -4,23 +4,27 @@ package com.backtome.app;
 import android.app.*;
 import android.os.*;
 import android.content.*;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.view.*;
 import android.widget.*;
+import android.content.res.ColorStateList;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class MainActivity extends Activity {
 
-    int ink = Color.rgb(37,49,47);
-    int muted = Color.rgb(103,119,113);
-    int green = Color.rgb(69,112,101);
-    int cream = Color.rgb(244,245,241);
+    int ink = Color.rgb(35, 61, 51);
+    int muted = Color.rgb(112, 132, 121);
+    int green = Color.rgb(69, 132, 105);
+    int lightGreen = Color.rgb(235, 245, 238);
+    int white = Color.WHITE;
+    int line = Color.rgb(225, 237, 228);
 
-    LinearLayout root, content;
-    android.content.SharedPreferences prefs;
+    LinearLayout root;
+    SharedPreferences prefs;
 
     String[] tasks = {
         "لعبت أو سويت شيء لنفسي",
@@ -43,12 +47,19 @@ public class MainActivity extends Activity {
 
         prefs = getSharedPreferences("backtome", MODE_PRIVATE);
 
-        getWindow().setStatusBarColor(cream);
-        getWindow().setNavigationBarColor(cream);
+        getWindow().setStatusBarColor(white);
+        getWindow().setNavigationBarColor(white);
+
+        if (Build.VERSION.SDK_INT >= 23) {
+            getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR |
+                View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+            );
+        }
 
         if (Build.VERSION.SDK_INT >= 33 &&
             checkSelfPermission("android.permission.POST_NOTIFICATIONS")
-            != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            != PackageManager.PERMISSION_GRANTED) {
 
             requestPermissions(
                 new String[]{"android.permission.POST_NOTIFICATIONS"}, 7
@@ -60,6 +71,23 @@ public class MainActivity extends Activity {
 
     int dp(float n) {
         return (int)(n * getResources().getDisplayMetrics().density + .5f);
+    }
+
+    GradientDrawable bg(int color, int radius) {
+        GradientDrawable g = new GradientDrawable();
+        g.setColor(color);
+        g.setCornerRadius(dp(radius));
+        return g;
+    }
+
+    GradientDrawable borderBg(int color, int radius) {
+        GradientDrawable g = bg(color, radius);
+        g.setStroke(dp(1), line);
+        return g;
+    }
+
+    void pad(View v, int a, int b, int c, int d) {
+        v.setPadding(dp(a), dp(b), dp(c), dp(d));
     }
 
     TextView text(String s, int size, int color, boolean bold) {
@@ -75,58 +103,121 @@ public class MainActivity extends Activity {
 
     LinearLayout column() {
         LinearLayout l = new LinearLayout(this);
-        l.setOrientation(1);
+        l.setOrientation(LinearLayout.VERTICAL);
         return l;
     }
 
-    void pad(View v, int a, int b, int c, int d) {
-        v.setPadding(dp(a), dp(b), dp(c), dp(d));
+    void add(LinearLayout p, View v, int top, int left, int right, int bottom) {
+        LinearLayout.LayoutParams lp =
+            new LinearLayout.LayoutParams(-1, -2);
+
+        lp.setMargins(dp(left), dp(top), dp(right), dp(bottom));
+        p.addView(v, lp);
     }
 
-    GradientDrawable bg(int color, int radius) {
-        GradientDrawable g = new GradientDrawable();
-        g.setColor(color);
-        g.setCornerRadius(dp(radius));
-        return g;
+    LinearLayout card() {
+        LinearLayout l = column();
+        l.setBackground(borderBg(white, 20));
+        pad(l, 17, 16, 17, 16);
+        return l;
+    }
+
+    TextView sectionTitle(String s) {
+        TextView t = text(s, 19, ink, true);
+        return t;
+    }
+
+    Button button(String s) {
+        Button b = new Button(this);
+        b.setText(s);
+        b.setTextSize(14);
+        b.setTextColor(white);
+        b.setAllCaps(false);
+        b.setTypeface(null, Typeface.BOLD);
+        b.setBackground(bg(green, 15));
+        b.setPadding(dp(12), dp(10), dp(12), dp(10));
+
+        LinearLayout.LayoutParams lp =
+            new LinearLayout.LayoutParams(-1, -2);
+        lp.setMargins(0, dp(9), 0, 0);
+        b.setLayoutParams(lp);
+
+        return b;
     }
 
     void build() {
 
         ScrollView sc = new ScrollView(this);
+        sc.setFillViewport(true);
+        sc.setBackgroundColor(white);
 
         root = column();
-        root.setBackgroundColor(cream);
-        pad(root, 18, 18, 18, 28);
+        root.setBackgroundColor(white);
+        pad(root, 19, 20, 19, 30);
 
         sc.addView(root);
         setContentView(sc);
 
-        TextView brand = text("BACK TO ME", 12, green, true);
-        brand.setGravity(Gravity.LEFT);
-        root.addView(brand);
+        // Header and logo
+        LinearLayout header = column();
+        header.setGravity(Gravity.CENTER);
+        header.setBackground(bg(lightGreen, 24));
+        pad(header, 16, 19, 16, 19);
+        root.addView(header);
 
-        TextView heading = text("ارجع لحياتك، خطوة خطوة", 27, ink, true);
-        heading.setGravity(Gravity.RIGHT);
-        add(root, heading, 4, 0, 0, 3);
+        ImageView logo = new ImageView(this);
 
-        add(root,
-            text("مو مطلوب توقف الأفكار بالقوة. المطلوب تتعلم ما تمشي وراها.",
-            14, muted, false),
-            0, 0, 0, 16
+        int logoId = getResources().getIdentifier(
+            "back_to_me_logo", "drawable", getPackageName()
         );
 
-        LinearLayout card = card();
-        root.addView(card);
+        if (logoId != 0) {
+            logo.setImageResource(logoId);
+        }
 
-        card.addView(text("تذكير اليوم", 16, green, true));
+        logo.setAdjustViewBounds(true);
+        logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
 
-        add(card,
-            text("وجود الفكرة ما يعني إنك لازم تتبعها أو تحلّها الآن.",
-            17, ink, true),
-            10, 0, 0, 0
+        LinearLayout.LayoutParams logoParams =
+            new LinearLayout.LayoutParams(dp(145), dp(145));
+        logoParams.gravity = Gravity.CENTER;
+        header.addView(logo, logoParams);
+
+        TextView brand = text("BACK TO ME", 13, green, true);
+        brand.setGravity(Gravity.CENTER);
+        add(header, brand, 8, 0, 0, 0);
+
+        TextView heading = text("ارجع لحياتك، خطوة خطوة", 24, ink, true);
+        heading.setGravity(Gravity.CENTER);
+        add(header, heading, 9, 0, 0, 0);
+
+        TextView intro = text(
+            "مساحتك الخاصة للتركيز على نفسك من جديد.",
+            13, muted, false
+        );
+        intro.setGravity(Gravity.CENTER);
+        add(header, intro, 7, 0, 0, 0);
+
+        // Daily reminder
+        LinearLayout reminder = card();
+        add(root, reminder, 18, 0, 0, 0);
+
+        TextView reminderTitle = text("تذكير اليوم", 16, green, true);
+        reminder.addView(reminderTitle);
+
+        add(reminder,
+            text(
+                "وجود الفكرة ما يعني إنك لازم تتبعها أو تحلّها الآن. تقدر تتركها تمر وترجع لشيء يهمك.",
+                15, ink, false
+            ),
+            9, 0, 0, 0
         );
 
-        add(root, text("مهمتك اليوم", 19, ink, true), 22, 0, 0, 8);
+        // Daily tasks
+        add(root, sectionTitle("مهمتك اليوم"), 24, 2, 0, 9);
+
+        LinearLayout taskCard = card();
+        root.addView(taskCard);
 
         for (int i = 0; i < tasks.length; i++) {
 
@@ -136,48 +227,54 @@ public class MainActivity extends Activity {
             checks[i] = cb;
 
             cb.setText(tasks[i]);
-            cb.setTextSize(15);
+            cb.setTextSize(14);
             cb.setTextColor(ink);
-
             cb.setButtonTintList(
-                android.content.res.ColorStateList.valueOf(green)
+                ColorStateList.valueOf(green)
             );
-
             cb.setTextDirection(View.TEXT_DIRECTION_RTL);
             cb.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-            cb.setPadding(dp(4), dp(5), dp(4), dp(5));
+            cb.setPadding(dp(4), dp(8), dp(4), dp(8));
 
-            cb.setChecked(prefs.getBoolean(today() + "_" + i, false));
-
-            cb.setOnCheckedChangeListener((v, c) ->
-                prefs.edit().putBoolean(today() + "_" + x, c).apply()
+            cb.setChecked(
+                prefs.getBoolean(today() + "_" + i, false)
             );
 
-            root.addView(cb);
+            cb.setOnCheckedChangeListener((v, checked) ->
+                prefs.edit()
+                    .putBoolean(today() + "_" + x, checked)
+                    .apply()
+            );
+
+            taskCard.addView(cb);
         }
 
-        add(root, text("شدة الرغبة في التفقد", 18, ink, true),
-            20, 0, 0, 5);
+        // Urge scale
+        add(root, sectionTitle("شدة الرغبة في التفقد"), 23, 2, 0, 9);
 
-        scoreText = text("0 من 10", 14, green, true);
-        root.addView(scoreText);
+        LinearLayout urgeCard = card();
+        root.addView(urgeCard);
+
+        TextView urgeInfo = text(
+            "قيّم شعورك الآن من 0 إلى 10",
+            13, muted, false
+        );
+        urgeCard.addView(urgeInfo);
+
+        scoreText = text("0 من 10", 17, green, true);
+        add(urgeCard, scoreText, 12, 0, 0, 4);
 
         urge = new SeekBar(this);
         urge.setMax(10);
         urge.setProgress(prefs.getInt(today() + "_urge", 0));
-
         score = urge.getProgress();
+
         scoreText.setText(score + " من 10");
 
-        urge.setProgressTintList(
-            android.content.res.ColorStateList.valueOf(green)
-        );
+        urge.setProgressTintList(ColorStateList.valueOf(green));
+        urge.setThumbTintList(ColorStateList.valueOf(green));
 
-        urge.setThumbTintList(
-            android.content.res.ColorStateList.valueOf(green)
-        );
-
-        root.addView(urge);
+        add(urgeCard, urge, 5, 0, 0, 0);
 
         urge.setOnSeekBarChangeListener(
             new SeekBar.OnSeekBarChangeListener() {
@@ -189,27 +286,39 @@ public class MainActivity extends Activity {
                 }
 
                 public void onStartTrackingTouch(SeekBar s) {}
+
                 public void onStopTrackingTouch(SeekBar s) {}
             }
         );
 
-        add(root, text("ملاحظة قصيرة (اختياري)", 17, ink, true),
-            18, 0, 0, 6);
+        // Notes
+        add(root, sectionTitle("ملاحظتي اليوم"), 23, 2, 0, 9);
+
+        LinearLayout noteCard = card();
+        root.addView(noteCard);
+
+        TextView noteInfo = text(
+            "اكتب أي شيء تبي تتذكره عن يومك.",
+            13, muted, false
+        );
+        noteCard.addView(noteInfo);
 
         note = new EditText(this);
         note.setTextSize(14);
         note.setTextColor(ink);
+        note.setHintTextColor(muted);
         note.setHint("وش صار؟ وش سويت بدل التفقد؟");
         note.setGravity(Gravity.RIGHT | Gravity.TOP);
+        note.setTextDirection(View.TEXT_DIRECTION_RTL);
         note.setMinLines(3);
-        note.setBackground(bg(Color.WHITE, 16));
-        pad(note, 12, 10, 12, 10);
+        note.setBackground(bg(lightGreen, 14));
+        pad(note, 12, 12, 12, 12);
         note.setText(prefs.getString(today() + "_note", ""));
 
-        root.addView(note);
+        add(noteCard, note, 12, 0, 0, 0);
 
         Button save = button("حفظ يومي");
-        root.addView(save);
+        noteCard.addView(save);
 
         save.setOnClickListener(v -> {
             prefs.edit()
@@ -222,32 +331,56 @@ public class MainActivity extends Activity {
             ).show();
         });
 
-        add(root, text("إذا جتك الرغبة الآن", 19, ink, true),
-            22, 0, 0, 8);
+        // Exercise
+        add(root, sectionTitle("إذا جتك الرغبة الآن"), 23, 2, 0, 9);
 
         LinearLayout exercise = card();
+        exercise.setBackground(bg(lightGreen, 20));
         root.addView(exercise);
 
         add(exercise,
-            text("1. سمّها: «هذه رغبة في التفقد، مو أمر لازم أنفذه»",
-            15, ink, true), 0, 0, 0, 8);
+            text(
+                "1. سمّها: هذه رغبة في التفقد، مو أمر لازم أنفذه.",
+                15, ink, true
+            ), 0, 0, 0, 12
+        );
 
         add(exercise,
-            text("2. أجّل فتح الحساب 10 دقائق. لا تحاول تطرد الفكرة؛ خلّها موجودة.",
-            15, ink, false), 0, 0, 0, 8);
+            text(
+                "2. أجّل فتح الحساب 10 دقائق. لا تحاول تطرد الفكرة؛ خلّها موجودة.",
+                14, ink, false
+            ), 0, 0, 0, 12
+        );
 
         add(exercise,
-            text("3. خلال الدقائق العشر، ارجع لشيء تختاره أنت: Roblox، شرب ماء، ترتيب شيء، أو مشي بسيط.",
-            15, ink, false), 0, 0, 0, 8);
+            text(
+                "3. خلال الدقائق العشر، ارجع لشيء تختاره أنت: Roblox، شرب ماء، ترتيب شيء، أو نشاط تحبه.",
+                14, ink, false
+            ), 0, 0, 0, 12
+        );
 
         add(exercise,
-            text("4. لاحظ هل الرغبة تغيّرت، حتى لو ما اختفت. النجاح هو اختيارك، مو اختفاء الفكرة.",
-            15, green, true), 0, 0, 0, 0);
+            text(
+                "4. لاحظ هل الرغبة تغيرت، حتى لو ما اختفت. النجاح هو اختيارك، مو اختفاء الفكرة.",
+                14, green, true
+            ), 0, 0, 0, 0
+        );
 
-        add(root, text("تذكيرات", 19, ink, true), 22, 0, 0, 8);
+        // Reminders
+        add(root, sectionTitle("تذكيراتك اليومية"), 23, 2, 0, 9);
 
-        Button reminders = button("فعّل / حدّث تذكيرات الصباح والظهر والليل");
-        root.addView(reminders);
+        LinearLayout reminderCard = card();
+        root.addView(reminderCard);
+
+        add(reminderCard,
+            text(
+                "ثلاث رسائل قصيرة تساعدك تتذكر نفسك خلال اليوم.",
+                13, muted, false
+            ), 0, 0, 0, 4
+        );
+
+        Button reminders = button("تفعيل تذكيرات الصباح والظهر والليل");
+        reminderCard.addView(reminders);
 
         reminders.setOnClickListener(v -> {
             schedule(this, 9, 0, 1);
@@ -255,58 +388,41 @@ public class MainActivity extends Activity {
             schedule(this, 21, 0, 3);
 
             Toast.makeText(this,
-                "تم ضبط 3 تذكيرات يومية تقريبًا: 9 ص، 3 م، 9 م",
+                "تم ضبط التذكيرات اليومية",
                 Toast.LENGTH_LONG
             ).show();
         });
 
+        // History
+        add(root, sectionTitle("تقدمك"), 23, 2, 0, 9);
+
+        LinearLayout historyCard = card();
+        root.addView(historyCard);
+
+        add(historyCard,
+            text(
+                "راجع خطواتك خلال آخر سبعة أيام. لا تقارن نفسك بأحد.",
+                13, muted, false
+            ), 0, 0, 0, 4
+        );
+
         Button history = button("عرض ملخص آخر 7 أيام");
-        root.addView(history);
+        historyCard.addView(history);
         history.setOnClickListener(v -> showHistory());
 
-        add(root,
-            text("تذكّر: التقدم مو خط مستقيم، واليوم الصعب ما يلغي اللي قبله. التطبيق للمساندة الذاتية وليس تشخيصًا أو علاجًا. إذا الأفكار معطلة يومك، حاول تكلم شخص بالغ تثق فيه أو مختص.",
-            12, muted, false),
-            18, 0, 0, 0
+        // Footer
+        TextView footer = text(
+            "تذكّر: التقدم مو خط مستقيم، واليوم الصعب ما يلغي اللي قبله.\n\nالتطبيق للمساندة الذاتية وليس تشخيصًا أو علاجًا. إذا الأفكار معطلة يومك، حاول تكلم شخص بالغ تثق فيه أو مختص.",
+            12, muted, false
         );
+
+        footer.setGravity(Gravity.CENTER);
+        add(root, footer, 25, 5, 5, 10);
     }
 
     String today() {
         return new SimpleDateFormat("yyyyMMdd", Locale.US)
             .format(new Date());
-    }
-
-    LinearLayout card() {
-        LinearLayout l = column();
-        l.setBackground(bg(Color.WHITE, 18));
-        pad(l, 16, 15, 16, 15);
-        return l;
-    }
-
-    void add(LinearLayout p, View v, int t, int l, int r, int b) {
-        LinearLayout.LayoutParams lp =
-            new LinearLayout.LayoutParams(-1, -2);
-
-        lp.setMargins(0, dp(t), 0, dp(b));
-        p.addView(v, lp);
-    }
-
-    Button button(String s) {
-        Button b = new Button(this);
-        b.setText(s);
-        b.setTextSize(14);
-        b.setTextColor(Color.WHITE);
-        b.setAllCaps(false);
-        b.setBackground(bg(green, 14));
-        b.setPadding(dp(8), dp(8), dp(8), dp(8));
-
-        LinearLayout.LayoutParams lp =
-            new LinearLayout.LayoutParams(-1, -2);
-
-        lp.setMargins(0, dp(8), 0, 0);
-        b.setLayoutParams(lp);
-
-        return b;
     }
 
     void showHistory() {
@@ -377,4 +493,4 @@ public class MainActivity extends Activity {
             pi
         );
     }
-}
+            }
